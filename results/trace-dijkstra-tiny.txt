@@ -1,0 +1,17 @@
+$ pathlab trace examples/tiny.txt --algo dijkstra --start S --goal D
+=== pathlab trace (dijkstra) ===
+dijkstra S -> D: 12 steps · path S -> B -> D cost 15 · note: 4 heap pops
+
+   0 [init     ] start at S with distance 0; everything else is ∞
+   1 [settle   ] settle S: distance 0 is now permanent (frontier had nothing)
+   2 [relax    ] relax S -> A: ∞ -> 7 through edge weight 7
+   3 [relax    ] relax S -> B: ∞ -> 9 through edge weight 9
+   4 [settle   ] settle A: distance 7 is now permanent (frontier had B)
+   5 [relax    ] relax A -> C: ∞ -> 22 through edge weight 15
+   6 [settle   ] settle B: distance 9 is now permanent (frontier had C)
+   7 [relax    ] relax B -> C: 22 -> 20 through edge weight 11
+   8 [relax    ] relax B -> D: ∞ -> 15 through edge weight 6
+   9 [settle   ] settle D: distance 15 is now permanent (frontier had C)
+  10 [goal     ] goal D reached at cost 15 — stop early
+  11 [done     ] finished: 4 of 5 nodes settled
+exit=0

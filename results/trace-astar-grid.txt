@@ -1,0 +1,18 @@
+$ pathlab trace examples/grid_small.txt --algo astar --max-steps 12
+=== pathlab trace (astar) ===
+astar 0,0 -> 6,8: 51 steps · path 0,0 -> 0,1 -> 0,2 -> 0,3 -> 1,3 -> 1,4 -> 2,4 -> 2,5 -> 2,6 -> 3,6 -> 4,6 -> 5,6 -> 5,7 -> 5,8 -> 6,8 cost 14 · note: heuristic: manhattan
+
+   0 [init     ] start at 0,0: g=0, h=14, f=14 (manhattan heuristic)
+   1 [settle   ] settle 0,0: g=0, h=14, f=14 is minimal (frontier had nothing)
+   2 [relax    ] relax 0,0 -> 0,1: g ∞ -> 1 (f=14) via weight 1
+   3 [relax    ] relax 0,0 -> 1,0: g ∞ -> 1 (f=14) via weight 1
+   4 [settle   ] settle 0,1: g=1, h=13, f=14 is minimal (frontier had 1,0)
+   5 [relax    ] relax 0,1 -> 0,2: g ∞ -> 2 (f=14) via weight 1
+   6 [settle   ] settle 1,0: g=1, h=13, f=14 is minimal (frontier had 0,2)
+   7 [relax    ] relax 1,0 -> 2,0: g ∞ -> 2 (f=14) via weight 1
+   8 [settle   ] settle 0,2: g=2, h=12, f=14 is minimal (frontier had 2,0)
+   9 [relax    ] relax 0,2 -> 0,3: g ∞ -> 3 (f=14) via weight 1
+  10 [relax    ] relax 0,2 -> 1,2: g ∞ -> 3 (f=14) via weight 1
+  11 [settle   ] settle 2,0: g=2, h=12, f=14 is minimal (frontier had 0,3, 1,2)
+  ... 39 more steps
+exit=0

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pathlab — astar on examples/grid_small.txt</title>
+<style>
+:root{--bg:#0f1420;--panel:#161d2e;--line:#2a3550;--fg:#dce4f5;--muted:#8b98b8;
+--acc:#4cc38a;--front:#e8b04c;--cur:#ff6b6b;--edge:#55628a;--goal:#e86aa0;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:14px/1.45 system-ui,"Segoe UI",sans-serif}
+header{padding:14px 18px;border-bottom:1px solid var(--line)}
+h1{font-size:16px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:12px}
+main{display:flex;gap:14px;padding:14px 18px;flex-wrap:wrap}
+#stage{flex:1 1 520px;background:var(--panel);border:1px solid var(--line);
+border-radius:10px;padding:8px;min-width:460px}
+svg{width:100%;height:auto;display:block}
+.edge line{stroke:var(--edge);stroke-width:2}
+.edge.directed line{marker-end:url(#arrow)}
+.edge text{fill:var(--muted);font-size:10px;text-anchor:middle}
+.edge.active line{stroke:var(--cur);stroke-width:3}
+.edge.active text{fill:var(--cur);font-weight:700}
+.node circle{fill:#1d2740;stroke:#5c6b96;stroke-width:2}
+.node text.id{fill:var(--fg);font-size:11px;text-anchor:middle}
+.node text.dist{fill:var(--front);font-size:10px;text-anchor:middle}
+.node.settled circle{fill:var(--acc);stroke:#0f1420}
+.node.settled text.id{fill:#08130d;font-weight:700}
+.node.settled text.dist{fill:#08130d}
+.node.frontier circle{stroke:var(--front);stroke-dasharray:4 3}
+.node.is-start circle{stroke:var(--acc);stroke-width:3}
+.node.is-goal circle{stroke:var(--goal);stroke-width:3}
+.node.current circle{stroke:var(--cur);stroke-width:3;stroke-dasharray:none}
+.node.cycle circle{stroke:var(--cur);stroke-width:3;stroke-dasharray:3 2}
+#pathlayer polyline{fill:none;stroke:var(--acc);stroke-width:4;
+stroke-opacity:.65;stroke-linecap:round;stroke-linejoin:round}
+#side{flex:1 1 300px;max-width:430px;background:var(--panel);
+border:1px solid var(--line);border-radius:10px;padding:12px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;
+background:#26304a;color:#7fb8ff;font-size:12px;font-weight:700}
+#text{margin:10px 0;min-height:3.2em}
+.ctl{display:flex;gap:8px;align-items:center;margin:8px 0}
+button{background:#232e4a;border:1px solid var(--line);color:var(--fg);
+border-radius:8px;padding:6px 11px;cursor:pointer}
+button:hover{background:#2c3a5e}
+input[type=range]{flex:1;accent-color:#4cc38a}
+.snap{font-family:ui-monospace,Consolas,monospace;font-size:12px;
+white-space:pre-wrap;color:var(--muted);background:#101828;
+border:1px solid var(--line);border-radius:8px;padding:8px;
+max-height:250px;overflow:auto}
+.keys{color:var(--muted);font-size:12px;padding-left:18px;margin:10px 0 0}
+</style>
+</head>
+<body>
+<header><h1>pathlab — astar on examples/grid_small.txt</h1><div class="sub" id="sum">astar 0,0 -&gt; 6,8: 51 steps · path 0,0 -&gt; 0,1 -&gt; 0,2 -&gt; 0,3 -&gt; 1,3 -&gt; 1,4 -&gt; 2,4 -&gt; 2,5 -&gt; 2,6 -&gt; 3,6 -&gt; 4,6 -&gt; 5,6 -&gt; 5,7 -&gt; 5,8 -&gt; 6,8 cost 14 · note: heuristic: manhattan</div></header>
+<main>
+<div id="stage"><svg id="svg" viewBox="0 0 660 460" role="img"
+ aria-label="graph animation">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="7"
+ markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="#55628a"></path>
+</marker>
+</defs>
+<g id="edges"></g><g id="pathlayer"></g><g id="nodes"></g>
+</svg></div>
+<div id="side">
+<div><span class="badge" id="action">init</span>
+ <span class="sub" id="counter">step 0 / 0</span></div>
+<div id="text"></div>
+<div class="ctl">
+<button id="first" title="first step">&#9198;</button>
+<button id="prev" title="previous step">&#9664;</button>
+<input type="range" id="scrub" min="0" max="0" value="0" aria-label="step">
+<button id="next" title="next step">&#9654;</button>
+<button id="last" title="last step">&#9197;</button>
+</div>
+<div class="snap" id="snap"></div>
+<ul class="keys">
+<li>green = settled, dashed amber = frontier, red ring = current node</li>
+<li>green polyline = final path (appears on the last step)</li>
+<li>arrow keys navigate; numbers under nodes are their distances</li>
+</ul>
+</div>
+</main>
+<script>
+const P = {"graph":{"directed":false,"nodes":[{"id":"0,0","x":0.0,"y":0.0},{"id":"0,1","x":1.0,"y":0.0},{"id":"0,2","x":2.0,"y":0.0},{"id":"0,3","x":3.0,"y":0.0},{"id":"0,5","x":5.0,"y":0.0},{"id":"0,6","x":6.0,"y":0.0},{"id":"0,7","x":7.0,"y":0.0},{"id":"0,8","x":8.0,"y":0.0},{"id":"1,0","x":0.0,"y":1.0},{"id":"1,2","x":2.0,"y":1.0},{"id":"1,3","x":3.0,"y":1.0},{"id":"1,4","x":4.0,"y":1.0},{"id":"1,6","x":6.0,"y":1.0},{"id":"1,7","x":7.0,"y":1.0},{"id":"2,0","x":0.0,"y":2.0},{"id":"2,1","x":1.0,"y":2.0},{"id":"2,4","x":4.0,"y":2.0},{"id":"2,5","x":5.0,"y":2.0},{"id":"2,6","x":6.0,"y":2.0},{"id":"2,8","x":8.0,"y":2.0},{"id":"3,0","x":0.0,"y":3.0},{"id":"3,2","x":2.0,"y":3.0},{"id":"3,3","x":3.0,"y":3.0},{"id":"3,6","x":6.0,"y":3.0},{"id":"3,7","x":7.0,"y":3.0},{"id":"4,1","x":1.0,"y":4.0},{"id":"4,2","x":2.0,"y":4.0},{"id":"4,3","x":3.0,"y":4.0},{"id":"4,5","x":5.0,"y":4.0},{"id":"4,6","x":6.0,"y":4.0},{"id":"4,8","x":8.0,"y":4.0},{"id":"5,0","x":0.0,"y":5.0},{"id":"5,1","x":1.0,"y":5.0},{"id":"5,2","x":2.0,"y":5.0},{"id":"5,3","x":3.0,"y":5.0},{"id":"5,4","x":4.0,"y":5.0},{"id":"5,5","x":5.0,"y":5.0},{"id":"5,6","x":6.0,"y":5.0},{"id":"5,7","x":7.0,"y":5.0},{"id":"5,8","x":8.0,"y":5.0},{"id":"6,0","x":0.0,"y":6.0},{"id":"6,1","x":1.0,"y":6.0},{"id":"6,2","x":2.0,"y":6.0},{"id":"6,5","x":5.0,"y":6.0},{"id":"6,6","x":6.0,"y":6.0},{"id":"6,8","x":8.0,"y":6.0}],"edges":[{"from":"0,0","to":"0,1","w":1.0},{"from":"0,0","to":"1,0","w":1.0},{"from":"0,1","to":"0,2","w":1.0},{"from":"0,2","to":"0,3","w":1.0},{"from":"0,2","to":"1,2","w":1.0},{"from":"0,3","to":"1,3","w":1.0},{"from":"0,5","to":"0,6","w":1.0},{"from":"0,6","to":"0,7","w":1.0},{"from":"0,6","to":"1,6","w":1.0},{"from":"0,7","to":"0,8","w":1.0},{"from":"0,7","to":"1,7","w":1.0},{"from":"1,0","to":"2,0","w":1.0},{"from":"1,2","to":"1,3","w":1.0},{"from":"1,3","to":"1,4","w":1.0},{"from":"1,4","to":"2,4","w":1.0},{"from":"1,6","to":"1,7","w":1.0},{"from":"1,6","to":"2,6","w":1.0},{"from":"2,0","to":"2,1","w":1.0},{"from":"2,0","to":"3,0","w":1.0},{"from":"2,4","to":"2,5","w":1.0},{"from":"2,5","to":"2,6","w":1.0},{"from":"2,6","to":"3,6","w":1.0},{"from":"3,2","to":"3,3","w":1.0},{"from":"3,2","to":"4,2","w":1.0},{"from":"3,3","to":"4,3","w":1.0},{"from":"3,6","to":"3,7","w":1.0},{"from":"3,6","to":"4,6","w":1.0},{"from":"4,1","to":"4,2","w":1.0},{"from":"4,1","to":"5,1","w":1.0},{"from":"4,2","to":"4,3","w":1.0},{"from":"4,2","to":"5,2","w":1.0},{"from":"4,3","to":"5,3","w":1.0},{"from":"4,5","to":"4,6","w":1.0},{"from":"4,5","to":"5,5","w":1.0},{"from":"4,6","to":"5,6","w":1.0},{"from":"4,8","to":"5,8","w":1.0},{"from":"5,0","to":"5,1","w":1.0},{"from":"5,0","to":"6,0","w":1.0},{"from":"5,1","to":"5,2","w":1.0},{"from":"5,1","to":"6,1","w":1.0},{"from":"5,2","to":"5,3","w":1.0},{"from":"5,2","to":"6,2","w":1.0},{"from":"5,3","to":"5,4","w":1.0},{"from":"5,4","to":"5,5","w":1.0},{"from":"5,5","to":"5,6","w":1.0},{"from":"5,5","to":"6,5","w":1.0},{"from":"5,6","to":"5,7","w":1.0},{"from":"5,6","to":"6,6","w":1.0},{"from":"5,7","to":"5,8","w":1.0},{"from":"5,8","to":"6,8","w":1.0},{"from":"6,0","to":"6,1","w":1.0},{"from":"6,1","to":"6,2","w":1.0},{"from":"6,5","to":"6,6","w":1.0}],"start":"0,0","goal":"6,8","meta":{"kind":"grid","rows":7,"cols":9}},"steps":[{"seq":0,"action":"init","text":"start at 0,0: g=0, h=14, f=14 (manhattan heuristic)","node":"0,0","edge":null,"current":"0,0","dist":{"0,0":0.0},"settled":[],"frontier":["0,0"]},{"seq":1,"action":"settle","text":"settle 0,0: g=0, h=14, f=14 is minimal (frontier had nothing)","node":"0,0","edge":null,"current":"0,0","dist":{"0,0":0.0},"settled":["0,0"],"frontier":[]},{"seq":2,"action":"relax","text":"relax 0,0 -> 0,1: g \u221e -> 1 (f=14) via weight 1","node":"0,1","edge":["0,0","0,1"],"current":"0,0","dist":{"0,0":0.0,"0,1":1.0},"settled":["0,0"],"frontier":["0,1"]},{"seq":3,"action":"relax","text":"relax 0,0 -> 1,0: g \u221e -> 1 (f=14) via weight 1","node":"1,0","edge":["0,0","1,0"],"current":"0,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0},"settled":["0,0"],"frontier":["0,1","1,0"]},{"seq":4,"action":"settle","text":"settle 0,1: g=1, h=13, f=14 is minimal (frontier had 1,0)","node":"0,1","edge":null,"current":"0,1","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0},"settled":["0,0","0,1"],"frontier":["1,0"]},{"seq":5,"action":"relax","text":"relax 0,1 -> 0,2: g \u221e -> 2 (f=14) via weight 1","node":"0,2","edge":["0,1","0,2"],"current":"0,1","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0},"settled":["0,0","0,1"],"frontier":["0,2","1,0"]},{"seq":6,"action":"settle","text":"settle 1,0: g=1, h=13, f=14 is minimal (frontier had 0,2)","node":"1,0","edge":null,"current":"1,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0},"settled":["0,0","0,1","1,0"],"frontier":["0,2"]},{"seq":7,"action":"relax","text":"relax 1,0 -> 2,0: g \u221e -> 2 (f=14) via weight 1","node":"2,0","edge":["1,0","2,0"],"current":"1,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0},"settled":["0,0","0,1","1,0"],"frontier":["0,2","2,0"]},{"seq":8,"action":"settle","text":"settle 0,2: g=2, h=12, f=14 is minimal (frontier had 2,0)","node":"0,2","edge":null,"current":"0,2","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0},"settled":["0,0","0,1","0,2","1,0"],"frontier":["2,0"]},{"seq":9,"action":"relax","text":"relax 0,2 -> 0,3: g \u221e -> 3 (f=14) via weight 1","node":"0,3","edge":["0,2","0,3"],"current":"0,2","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0},"settled":["0,0","0,1","0,2","1,0"],"frontier":["0,3","2,0"]},{"seq":10,"action":"relax","text":"relax 0,2 -> 1,2: g \u221e -> 3 (f=14) via weight 1","node":"1,2","edge":["0,2","1,2"],"current":"0,2","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0},"settled":["0,0","0,1","0,2","1,0"],"frontier":["0,3","1,2","2,0"]},{"seq":11,"action":"settle","text":"settle 2,0: g=2, h=12, f=14 is minimal (frontier had 0,3, 1,2)","node":"2,0","edge":null,"current":"2,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0},"settled":["0,0","0,1","0,2","1,0","2,0"],"frontier":["0,3","1,2"]},{"seq":12,"action":"relax","text":"relax 2,0 -> 2,1: g \u221e -> 3 (f=14) via weight 1","node":"2,1","edge":["2,0","2,1"],"current":"2,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0},"settled":["0,0","0,1","0,2","1,0","2,0"],"frontier":["0,3","1,2","2,1"]},{"seq":13,"action":"relax","text":"relax 2,0 -> 3,0: g \u221e -> 3 (f=14) via weight 1","node":"3,0","edge":["2,0","3,0"],"current":"2,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0},"settled":["0,0","0,1","0,2","1,0","2,0"],"frontier":["0,3","1,2","2,1","3,0"]},{"seq":14,"action":"settle","text":"settle 0,3: g=3, h=11, f=14 is minimal (frontier had 1,2, 2,1, 3,0)","node":"0,3","edge":null,"current":"0,3","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0},"settled":["0,0","0,1","0,2","0,3","1,0","2,0"],"frontier":["1,2","2,1","3,0"]},{"seq":15,"action":"relax","text":"relax 0,3 -> 1,3: g \u221e -> 4 (f=14) via weight 1","node":"1,3","edge":["0,3","1,3"],"current":"0,3","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0},"settled":["0,0","0,1","0,2","0,3","1,0","2,0"],"frontier":["1,2","1,3","2,1","3,0"]},{"seq":16,"action":"settle","text":"settle 1,2: g=3, h=11, f=14 is minimal (frontier had 1,3, 2,1, 3,0)","node":"1,2","edge":null,"current":"1,2","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","2,0"],"frontier":["1,3","2,1","3,0"]},{"seq":17,"action":"settle","text":"settle 2,1: g=3, h=11, f=14 is minimal (frontier had 1,3, 3,0)","node":"2,1","edge":null,"current":"2,1","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","2,0","2,1"],"frontier":["1,3","3,0"]},{"seq":18,"action":"settle","text":"settle 3,0: g=3, h=11, f=14 is minimal (frontier had 1,3)","node":"3,0","edge":null,"current":"3,0","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","2,0","2,1","3,0"],"frontier":["1,3"]},{"seq":19,"action":"settle","text":"settle 1,3: g=4, h=10, f=14 is minimal (frontier had nothing)","node":"1,3","edge":null,"current":"1,3","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","2,0","2,1","3,0"],"frontier":[]},{"seq":20,"action":"relax","text":"relax 1,3 -> 1,4: g \u221e -> 5 (f=14) via weight 1","node":"1,4","edge":["1,3","1,4"],"current":"1,3","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","2,0","2,1","3,0"],"frontier":["1,4"]},{"seq":21,"action":"settle","text":"settle 1,4: g=5, h=9, f=14 is minimal (frontier had nothing)","node":"1,4","edge":null,"current":"1,4","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","3,0"],"frontier":[]},{"seq":22,"action":"relax","text":"relax 1,4 -> 2,4: g \u221e -> 6 (f=14) via weight 1","node":"2,4","edge":["1,4","2,4"],"current":"1,4","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","3,0"],"frontier":["2,4"]},{"seq":23,"action":"settle","text":"settle 2,4: g=6, h=8, f=14 is minimal (frontier had nothing)","node":"2,4","edge":null,"current":"2,4","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","3,0"],"frontier":[]},{"seq":24,"action":"relax","text":"relax 2,4 -> 2,5: g \u221e -> 7 (f=14) via weight 1","node":"2,5","edge":["2,4","2,5"],"current":"2,4","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","3,0"],"frontier":["2,5"]},{"seq":25,"action":"settle","text":"settle 2,5: g=7, h=7, f=14 is minimal (frontier had nothing)","node":"2,5","edge":null,"current":"2,5","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","3,0"],"frontier":[]},{"seq":26,"action":"relax","text":"relax 2,5 -> 2,6: g \u221e -> 8 (f=14) via weight 1","node":"2,6","edge":["2,5","2,6"],"current":"2,5","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","3,0"],"frontier":["2,6"]},{"seq":27,"action":"settle","text":"settle 2,6: g=8, h=6, f=14 is minimal (frontier had nothing)","node":"2,6","edge":null,"current":"2,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0"],"frontier":[]},{"seq":28,"action":"relax","text":"relax 2,6 -> 1,6: g \u221e -> 9 (f=16) via weight 1","node":"1,6","edge":["2,6","1,6"],"current":"2,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0"],"frontier":["1,6"]},{"seq":29,"action":"relax","text":"relax 2,6 -> 3,6: g \u221e -> 9 (f=14) via weight 1","node":"3,6","edge":["2,6","3,6"],"current":"2,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0"],"frontier":["1,6","3,6"]},{"seq":30,"action":"settle","text":"settle 3,6: g=9, h=5, f=14 is minimal (frontier had 1,6)","node":"3,6","edge":null,"current":"3,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6"],"frontier":["1,6"]},{"seq":31,"action":"relax","text":"relax 3,6 -> 3,7: g \u221e -> 10 (f=14) via weight 1","node":"3,7","edge":["3,6","3,7"],"current":"3,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6"],"frontier":["1,6","3,7"]},{"seq":32,"action":"relax","text":"relax 3,6 -> 4,6: g \u221e -> 10 (f=14) via weight 1","node":"4,6","edge":["3,6","4,6"],"current":"3,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6"],"frontier":["1,6","3,7","4,6"]},{"seq":33,"action":"settle","text":"settle 3,7: g=10, h=4, f=14 is minimal (frontier had 1,6, 4,6)","node":"3,7","edge":null,"current":"3,7","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7"],"frontier":["1,6","4,6"]},{"seq":34,"action":"settle","text":"settle 4,6: g=10, h=4, f=14 is minimal (frontier had 1,6)","node":"4,6","edge":null,"current":"4,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6"],"frontier":["1,6"]},{"seq":35,"action":"relax","text":"relax 4,6 -> 4,5: g \u221e -> 11 (f=16) via weight 1","node":"4,5","edge":["4,6","4,5"],"current":"4,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6"],"frontier":["1,6","4,5"]},{"seq":36,"action":"relax","text":"relax 4,6 -> 5,6: g \u221e -> 11 (f=14) via weight 1","node":"5,6","edge":["4,6","5,6"],"current":"4,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6"],"frontier":["1,6","4,5","5,6"]},{"seq":37,"action":"settle","text":"settle 5,6: g=11, h=3, f=14 is minimal (frontier had 1,6, 4,5)","node":"5,6","edge":null,"current":"5,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6"],"frontier":["1,6","4,5"]},{"seq":38,"action":"relax","text":"relax 5,6 -> 5,5: g \u221e -> 12 (f=16) via weight 1","node":"5,5","edge":["5,6","5,5"],"current":"5,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6"],"frontier":["1,6","4,5","5,5"]},{"seq":39,"action":"relax","text":"relax 5,6 -> 5,7: g \u221e -> 12 (f=14) via weight 1","node":"5,7","edge":["5,6","5,7"],"current":"5,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6"],"frontier":["1,6","4,5","5,5","5,7"]},{"seq":40,"action":"relax","text":"relax 5,6 -> 6,6: g \u221e -> 12 (f=14) via weight 1","node":"6,6","edge":["5,6","6,6"],"current":"5,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6"],"frontier":["1,6","4,5","5,5","5,7","6,6"]},{"seq":41,"action":"settle","text":"settle 5,7: g=12, h=2, f=14 is minimal (frontier had 1,6, 4,5, 5,5, 6,6)","node":"5,7","edge":null,"current":"5,7","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7"],"frontier":["1,6","4,5","5,5","6,6"]},{"seq":42,"action":"relax","text":"relax 5,7 -> 5,8: g \u221e -> 13 (f=14) via weight 1","node":"5,8","edge":["5,7","5,8"],"current":"5,7","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7"],"frontier":["1,6","4,5","5,5","5,8","6,6"]},{"seq":43,"action":"settle","text":"settle 6,6: g=12, h=2, f=14 is minimal (frontier had 1,6, 4,5, 5,5, 5,8)","node":"6,6","edge":null,"current":"6,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","6,6"],"frontier":["1,6","4,5","5,5","5,8"]},{"seq":44,"action":"relax","text":"relax 6,6 -> 6,5: g \u221e -> 13 (f=16) via weight 1","node":"6,5","edge":["6,6","6,5"],"current":"6,6","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","6,6"],"frontier":["1,6","4,5","5,5","5,8","6,5"]},{"seq":45,"action":"settle","text":"settle 5,8: g=13, h=1, f=14 is minimal (frontier had 1,6, 4,5, 5,5, 6,5)","node":"5,8","edge":null,"current":"5,8","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6"],"frontier":["1,6","4,5","5,5","6,5"]},{"seq":46,"action":"relax","text":"relax 5,8 -> 4,8: g \u221e -> 14 (f=16) via weight 1","node":"4,8","edge":["5,8","4,8"],"current":"5,8","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0,"4,8":14.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6"],"frontier":["1,6","4,5","4,8","5,5","6,5"]},{"seq":47,"action":"relax","text":"relax 5,8 -> 6,8: g \u221e -> 14 (f=14) via weight 1","node":"6,8","edge":["5,8","6,8"],"current":"5,8","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0,"4,8":14.0,"6,8":14.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6"],"frontier":["1,6","4,5","4,8","5,5","6,5","6,8"]},{"seq":48,"action":"settle","text":"settle 6,8: g=14, h=0, f=14 is minimal (frontier had 1,6, 4,5, 4,8, 5,5, 6,5)","node":"6,8","edge":null,"current":"6,8","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0,"4,8":14.0,"6,8":14.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6","6,8"],"frontier":["1,6","4,5","4,8","5,5","6,5"]},{"seq":49,"action":"goal","text":"goal 6,8 reached at cost 14 \u2014 stop early","node":"6,8","edge":null,"current":"6,8","dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0,"4,8":14.0,"6,8":14.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6","6,8"],"frontier":["1,6","4,5","4,8","5,5","6,5"]},{"seq":50,"action":"done","text":"finished: 22 of 46 nodes settled","node":null,"edge":null,"current":null,"dist":{"0,0":0.0,"0,1":1.0,"1,0":1.0,"0,2":2.0,"2,0":2.0,"0,3":3.0,"1,2":3.0,"2,1":3.0,"3,0":3.0,"1,3":4.0,"1,4":5.0,"2,4":6.0,"2,5":7.0,"2,6":8.0,"1,6":9.0,"3,6":9.0,"3,7":10.0,"4,6":10.0,"4,5":11.0,"5,6":11.0,"5,5":12.0,"5,7":12.0,"6,6":12.0,"5,8":13.0,"6,5":13.0,"4,8":14.0,"6,8":14.0},"settled":["0,0","0,1","0,2","0,3","1,0","1,2","1,3","1,4","2,0","2,1","2,4","2,5","2,6","3,0","3,6","3,7","4,6","5,6","5,7","5,8","6,6","6,8"],"frontier":["1,6","4,5","4,8","5,5","6,5"]}],"start":"0,0","goal":"6,8","path":["0,0","0,1","0,2","0,3","1,3","1,4","2,4","2,5","2,6","3,6","4,6","5,6","5,7","5,8","6,8"],"cycle":null,"algo":"astar"};
+const W = 660, H = 460, PAD = 52;
+const SVGNS = "http://www.w3.org/2000/svg";
+const nodes = P.graph.nodes, edges = P.graph.edges, steps = P.steps;
+const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+const idSet = new Set(nodes.map(n => n.id));
+const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+const minX = Math.min(...xs), maxX = Math.max(...xs);
+const minY = Math.min(...ys), maxY = Math.max(...ys);
+const scale = Math.min(
+  (W - 2*PAD) / Math.max(maxX - minX, 1e-9),
+  (H - 2*PAD) / Math.max(maxY - minY, 1e-9));
+const offX = PAD + ((W - 2*PAD) - (maxX - minX) * scale) / 2;
+const offY = PAD + ((H - 2*PAD) - (maxY - minY) * scale) / 2;
+const PX = n => offX + (n.x - minX) * scale;
+const PY = n => offY + (n.y - minY) * scale;
+const fmt = v => { if (v == null) return "\u221e";
+  const n = Number(v); return Number.isInteger(n) ? String(n)
+    : String(+n.toFixed(3)); };
+
+const edgeLayer = document.getElementById("edges");
+const nodeLayer = document.getElementById("nodes");
+const pathLayer = document.getElementById("pathlayer");
+
+const edgeEls = {};
+for (const e of edges) {
+  const a = byId[e.from], b = byId[e.to];
+  if (!a || !b) continue;
+  const g = document.createElementNS(SVGNS, "g");
+  g.setAttribute("class", "edge" + (P.graph.directed ? " directed" : ""));
+  const line = document.createElementNS(SVGNS, "line");
+  line.setAttribute("x1", PX(a)); line.setAttribute("y1", PY(a));
+  line.setAttribute("x2", PX(b)); line.setAttribute("y2", PY(b));
+  const midX = (PX(a) + PX(b)) / 2, midY = (PY(a) + PY(b)) / 2;
+  const halo = document.createElementNS(SVGNS, "circle");
+  halo.setAttribute("cx", midX); halo.setAttribute("cy", midY);
+  halo.setAttribute("r", 9); halo.setAttribute("fill", "#161d2e");
+  const label = document.createElementNS(SVGNS, "text");
+  label.setAttribute("x", midX); label.setAttribute("y", midY + 3);
+  label.textContent = fmt(e.w);
+  g.appendChild(line); g.appendChild(halo); g.appendChild(label);
+  edgeLayer.appendChild(g);
+  edgeEls[e.from + "\u0000" + e.to] = g;
+}
+
+const nodeEls = {};
+for (const n of nodes) {
+  const g = document.createElementNS(SVGNS, "g");
+  g.setAttribute("class", "node"
+    + (n.id === P.start ? " is-start" : "")
+    + (n.id === P.goal ? " is-goal" : "")
+    + ((P.cycle || []).includes(n.id) ? " cycle" : ""));
+  const c = document.createElementNS(SVGNS, "circle");
+  c.setAttribute("cx", PX(n)); c.setAttribute("cy", PY(n)); c.setAttribute("r", 17);
+  const idT = document.createElementNS(SVGNS, "text");
+  idT.setAttribute("class", "id");
+  idT.setAttribute("x", PX(n)); idT.setAttribute("y", PY(n) + 4);
+  idT.textContent = n.id;
+  const dT = document.createElementNS(SVGNS, "text");
+  dT.setAttribute("class", "dist");
+  dT.setAttribute("x", PX(n)); dT.setAttribute("y", PY(n) + 30);
+  dT.textContent = "";
+  g.appendChild(c); g.appendChild(idT); g.appendChild(dT);
+  nodeLayer.appendChild(g);
+  nodeEls[n.id] = { g, dist: dT };
+}
+
+let pathLine = null;
+if (P.path && P.path.length > 1) {
+  const poly = document.createElementNS(SVGNS, "polyline");
+  poly.setAttribute("points", P.path.map(id => {
+    const n = byId[id]; return n ? PX(n) + "," + PY(n) : "";
+  }).filter(Boolean).join(" "));
+  poly.style.display = "none";
+  pathLayer.appendChild(poly);
+  pathLine = poly;
+}
+
+// dist snapshots are keyed by node id for single-pair algorithms;
+// Floyd-Warshall uses "u->v" keys instead, so labels are hidden there.
+const distOk = steps.every(s =>
+  Object.keys(s.dist || {}).every(k => idSet.has(k)));
+
+let idx = 0;
+const els = {
+  action: document.getElementById("action"),
+  counter: document.getElementById("counter"),
+  text: document.getElementById("text"),
+  snap: document.getElementById("snap"),
+  scrub: document.getElementById("scrub"),
+};
+els.scrub.max = String(Math.max(steps.length - 1, 0));
+
+function apply(i) {
+  idx = Math.max(0, Math.min(i, steps.length - 1));
+  const s = steps[idx];
+  const settled = new Set(s.settled || []);
+  const frontier = new Set(s.frontier || []);
+  for (const n of nodes) {
+    const e = nodeEls[n.id];
+    e.g.classList.toggle("settled", settled.has(n.id));
+    e.g.classList.toggle("frontier", frontier.has(n.id));
+    e.g.classList.toggle("current", s.current === n.id);
+    if (distOk) e.dist.textContent =
+      s.dist && s.dist[n.id] !== undefined ? fmt(s.dist[n.id])
+        : (settled.has(n.id) ? "\u221e" : "");
+    else e.dist.textContent = "";
+  }
+  for (const k in edgeEls) edgeEls[k].classList.remove("active");
+  if (s.edge) {
+    const k = s.edge[0] + "\u0000" + s.edge[1];
+    if (edgeEls[k]) edgeEls[k].classList.add("active");
+    else if (!P.graph.directed) {
+      const alt = s.edge[1] + "\u0000" + s.edge[0];
+      if (edgeEls[alt]) edgeEls[alt].classList.add("active");
+    }
+  }
+  els.action.textContent = s.action;
+  els.counter.textContent = "step " + (idx + 1) + " / " + steps.length;
+  els.text.textContent = s.text;
+  const lines = [];
+  if ((s.settled || []).length && s.action !== "init")
+    lines.push("settled:  " + s.settled.join(", "));
+  if ((s.frontier || []).length)
+    lines.push("frontier: " + s.frontier.join(", "));
+  if (distOk && Object.keys(s.dist || {}).length)
+    lines.push("dist:     " + Object.entries(s.dist)
+      .map(([k, v]) => k + "=" + fmt(v)).join("  "));
+  els.snap.textContent = lines.join("\n") || "\u2014";
+  els.scrub.value = String(idx);
+  if (pathLine) pathLine.style.display =
+    idx === steps.length - 1 ? "block" : "none";
+}
+
+document.getElementById("first").onclick = () => apply(0);
+document.getElementById("prev").onclick = () => apply(idx - 1);
+document.getElementById("next").onclick = () => apply(idx + 1);
+document.getElementById("last").onclick = () => apply(steps.length - 1);
+els.scrub.addEventListener("input", e => apply(Number(e.target.value)));
+document.addEventListener("keydown", e => {
+  if (e.target && e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowRight" || e.key === " ") { apply(idx + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { apply(idx - 1); e.preventDefault(); }
+  else if (e.key === "Home") apply(0);
+  else if (e.key === "End") apply(steps.length - 1);
+});
+apply(0);
+</script>
+</body>
+</html>

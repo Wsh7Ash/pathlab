@@ -1,0 +1,7 @@
+# Directed graph with a reachable negative cycle A <-> B (total -2).
+# Use: pathlab trace examples/negative_cycle.txt --directed --algo bellman-ford
+# Observed: "neg-cycle" step, distances reported invalid.
+S A 2
+A B -1
+B A -1
+B C 1

@@ -1,0 +1,28 @@
+[project]
+name = "pathlab"
+version = "1.0.0"
+description = "Graph path-algorithm learning lab: trace Dijkstra/A*/Bellman-Ford/Floyd-Warshall step by step, export a self-contained HTML visualizer, drill with a prediction quiz. Fully offline."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Wsh7Ash" }]
+keywords = ["algorithms", "shortest-path", "dijkstra", "a-star", "visualization", "learning"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Education",
+]
+dependencies = []
+
+[project.scripts]
+pathlab = "pathlab.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

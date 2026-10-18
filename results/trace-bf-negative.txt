@@ -1,0 +1,12 @@
+$ pathlab trace examples/negative.txt --directed --algo bellman-ford --start S --goal C
+=== pathlab trace (bellman-ford) ===
+bellman-ford S -> C: 7 steps · path S -> B -> A -> C cost 0 · note: handles negative edge weights
+
+   0 [init     ] start at S with distance 0; will relax all 4 arcs up to 3 times
+   1 [relax    ] round 1: relax S -> A: ∞ -> 5 (weight 5)
+   2 [relax    ] round 1: relax S -> B: ∞ -> 2 (weight 2)
+   3 [relax    ] round 2: relax A -> C: ∞ -> 6 (weight 1)
+   4 [relax    ] round 2: relax B -> A: 5 -> -1 (weight -3)
+   5 [relax    ] round 3: relax A -> C: 6 -> 0 (weight 1)
+   6 [done     ] finished after 3 rounds — no more improvements
+exit=0

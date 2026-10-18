@@ -1,0 +1,8 @@
+$ pathlab viz examples/grid_small.txt --algo astar -o results/viz-grid-astar.html
+wrote results/viz-grid-astar.html (34332 bytes, 51 steps)
+astar 0,0 -> 6,8: 51 steps · path 0,0 -> 0,1 -> 0,2 -> 0,3 -> 1,3 -> 1,4 -> 2,4 -> 2,5 -> 2,6 -> 3,6 -> 4,6 -> 5,6 -> 5,7 -> 5,8 -> 6,8 cost 14 · note: heuristic: manhattan
+exit=0
+$ pathlab viz examples/negative_cycle.txt --algo bellman-ford --directed --start S --goal C -o results/viz-negcycle.html
+wrote results/viz-negcycle.html (15059 bytes, 21 steps)
+bellman-ford S -> C: 21 steps · NEGATIVE CYCLE: A -> B · note: negative cycle detected; distances are invalid
+exit=0

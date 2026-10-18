@@ -1,0 +1,9 @@
+# Textbook weighted graph — classic shortest-path exercise.
+# Shortest S -> D is S-B-D with cost 15 (A=7, B=9, C=20, D=15).
+S A 7
+S B 9
+A B 10
+A C 15
+B C 11
+B D 6
+C D 9

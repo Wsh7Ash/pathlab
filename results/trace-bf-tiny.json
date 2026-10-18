@@ -1,0 +1,180 @@
+$ pathlab trace tiny.txt --algo bellman-ford --format json
+{
+  "algo": "bellman-ford",
+  "distances": {
+    "A": 7.0,
+    "B": 9.0,
+    "C": 20.0,
+    "D": 15.0,
+    "S": 0.0
+  },
+  "found": true,
+  "goal": "D",
+  "negative_cycle": null,
+  "note": "handles negative edge weights",
+  "path": [
+    "S",
+    "B",
+    "D"
+  ],
+  "path_cost": 15.0,
+  "settled": [],
+  "start": "S",
+  "steps": [
+    {
+      "action": "init",
+      "current": null,
+      "dist": {
+        "S": 0.0
+      },
+      "edge": null,
+      "frontier": [
+        "S"
+      ],
+      "node": "S",
+      "seq": 0,
+      "settled": [],
+      "text": "start at S with distance 0; will relax all 14 arcs up to 4 times"
+    },
+    {
+      "action": "relax",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "S": 0.0
+      },
+      "edge": [
+        "S",
+        "A"
+      ],
+      "frontier": [
+        "A",
+        "S"
+      ],
+      "node": "A",
+      "seq": 1,
+      "settled": [],
+      "text": "round 1: relax S -> A: \u221e -> 7 (weight 7)"
+    },
+    {
+      "action": "relax",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "B": 9.0,
+        "S": 0.0
+      },
+      "edge": [
+        "S",
+        "B"
+      ],
+      "frontier": [
+        "A",
+        "B",
+        "S"
+      ],
+      "node": "B",
+      "seq": 2,
+      "settled": [],
+      "text": "round 1: relax S -> B: \u221e -> 9 (weight 9)"
+    },
+    {
+      "action": "relax",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "B": 9.0,
+        "C": 22.0,
+        "S": 0.0
+      },
+      "edge": [
+        "A",
+        "C"
+      ],
+      "frontier": [
+        "A",
+        "B",
+        "C",
+        "S"
+      ],
+      "node": "C",
+      "seq": 3,
+      "settled": [],
+      "text": "round 2: relax A -> C: \u221e -> 22 (weight 15)"
+    },
+    {
+      "action": "relax",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "B": 9.0,
+        "C": 20.0,
+        "S": 0.0
+      },
+      "edge": [
+        "B",
+        "C"
+      ],
+      "frontier": [
+        "A",
+        "B",
+        "C",
+        "S"
+      ],
+      "node": "C",
+      "seq": 4,
+      "settled": [],
+      "text": "round 2: relax B -> C: 22 -> 20 (weight 11)"
+    },
+    {
+      "action": "relax",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "B": 9.0,
+        "C": 20.0,
+        "D": 15.0,
+        "S": 0.0
+      },
+      "edge": [
+        "B",
+        "D"
+      ],
+      "frontier": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "S"
+      ],
+      "node": "D",
+      "seq": 5,
+      "settled": [],
+      "text": "round 2: relax B -> D: \u221e -> 15 (weight 6)"
+    },
+    {
+      "action": "done",
+      "current": null,
+      "dist": {
+        "A": 7.0,
+        "B": 9.0,
+        "C": 20.0,
+        "D": 15.0,
+        "S": 0.0
+      },
+      "edge": null,
+      "frontier": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "S"
+      ],
+      "node": null,
+      "seq": 6,
+      "settled": [],
+      "text": "no improvement in round 3 \u2014 converged early"
+    }
+  ]
+}
+exit=0

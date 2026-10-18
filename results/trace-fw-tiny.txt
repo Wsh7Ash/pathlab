@@ -1,0 +1,15 @@
+$ pathlab trace examples/tiny.txt --algo floyd-warshall --start S --goal D --max-steps 10
+=== pathlab trace (floyd-warshall) ===
+floyd-warshall all-pairs: 10 steps · path S -> B -> D cost 15 · note: all-pairs distances
+
+   0 [init     ] initialize 5x5 matrix: direct edges loaded, diagonal 0
+   1 [improve  ] via A: C -> S inf -> 22
+   2 [improve  ] via A: S -> C inf -> 22
+   3 [improve  ] via B: A -> D inf -> 16
+   4 [improve  ] via B: C -> S 22 -> 20
+   5 [improve  ] via B: D -> A inf -> 16
+   6 [improve  ] via B: D -> S inf -> 15
+   7 [improve  ] via B: S -> C 22 -> 20
+   8 [improve  ] via B: S -> D inf -> 15
+   9 [done     ] finished all 5 pivot phases
+exit=0

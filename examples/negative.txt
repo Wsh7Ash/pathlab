@@ -1,0 +1,7 @@
+# Directed graph with a negative edge but no negative cycle.
+# Use: pathlab trace examples/negative.txt --directed --algo bellman-ford
+# Answer: S=0, B=2, A=-1 (via S->B->A), C=0.
+S A 5
+S B 2
+B A -3
+A C 1
